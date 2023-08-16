@@ -3,6 +3,7 @@ package EWalletBetaApp.services;
 import EWalletBetaApp.dto.request.DepositRequest;
 import EWalletBetaApp.dto.request.LoginRequest;
 import EWalletBetaApp.dto.request.RegistrationRequest;
+import EWalletBetaApp.dto.request.TransferRequest;
 import EWalletBetaApp.dto.response.LoginResponse;
 import EWalletBetaApp.dto.response.RegistrationResponse;
 import EWalletBetaApp.dto.response.TransactionResponse;
@@ -76,6 +77,26 @@ class EWalletBetaServicesTest {
         depositRequest.setDepositAmount(BigDecimal.valueOf(5000));
         depositRequest.setAccountNumber("0212344758");
        assertThrows(InvalidAccountNumber.class, ()->  walletService.deposit(depositRequest));
+    }
+
+    @Test
+    void testWrongBalance() throws UserAlreadyExistException {
+        RegistrationResponse savedUser = walletService.register(registrationRequest);
+        assertNotNull(savedUser);
+        DepositRequest depositRequest = new DepositRequest();
+        depositRequest.setDepositAmount(BigDecimal.valueOf(49));
+        depositRequest.setAccountNumber("8126188203");
+        assertThrows(IllegalArgumentException.class,()->walletService.deposit(depositRequest));
+    }
+
+    @Test
+    void testTransferMethod() throws InvalidAccountNumber {
+        TransferRequest transferRequest = new TransferRequest();
+        transferRequest.setTransferAmount(BigDecimal.valueOf(2000));
+        transferRequest.setDepositorAccount("8126188203");
+        transferRequest.setReceiverAccountNumber("8140802014");
+        walletService.withdrawal(transferRequest);
+
     }
 
     private static RegistrationRequest buildWallet(){

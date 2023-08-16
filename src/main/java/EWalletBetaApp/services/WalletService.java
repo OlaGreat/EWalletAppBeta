@@ -1,9 +1,9 @@
 package EWalletBetaApp.services;
 
-import EWalletBetaApp.data.models.Transaction;
 import EWalletBetaApp.dto.request.DepositRequest;
 import EWalletBetaApp.dto.request.LoginRequest;
 import EWalletBetaApp.dto.request.RegistrationRequest;
+import EWalletBetaApp.dto.request.TransferRequest;
 import EWalletBetaApp.dto.response.LoginResponse;
 import EWalletBetaApp.dto.response.RegistrationResponse;
 import EWalletBetaApp.dto.response.TransactionResponse;
@@ -17,4 +17,6 @@ public interface WalletService {
     LoginResponse login(LoginRequest loginRequest) throws LoginFailedException;
 
     TransactionResponse deposit(DepositRequest depositRequest) throws InvalidAccountNumber;
+
+    TransactionResponse withdrawal(TransferRequest withdrawalRequest) throws InvalidAccountNumber;
 }

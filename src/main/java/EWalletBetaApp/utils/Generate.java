@@ -9,7 +9,7 @@ public class Generate {
        StringBuilder referenceNumber = new StringBuilder();
        String character = "abcdefghijklmnopqrstuvwsyz0123456789";
         for (int i = 0; i < 9; i++) {
-            int id = random.nextInt(character.length()+1);
+            int id = random.nextInt(character.length());
             char reference = character.charAt(id);
             referenceNumber.append(reference);
         }

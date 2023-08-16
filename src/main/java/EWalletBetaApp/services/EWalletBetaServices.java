@@ -1,13 +1,9 @@
 package EWalletBetaApp.services;
 
 import EWalletBetaApp.data.models.Gender;
-import EWalletBetaApp.data.models.Transaction;
 import EWalletBetaApp.data.models.Wallet;
 import EWalletBetaApp.data.repository.EWalletRepository;
-import EWalletBetaApp.dto.request.DepositRequest;
-import EWalletBetaApp.dto.request.LoginRequest;
-import EWalletBetaApp.dto.request.RegistrationRequest;
-import EWalletBetaApp.dto.request.TransactionRequest;
+import EWalletBetaApp.dto.request.*;
 import EWalletBetaApp.dto.response.LoginResponse;
 import EWalletBetaApp.dto.response.RegistrationResponse;
 import EWalletBetaApp.dto.response.TransactionResponse;
@@ -17,23 +13,21 @@ import EWalletBetaApp.exceptions.InvalidAccountNumber;
 import EWalletBetaApp.exceptions.LoginFailedException;
 import EWalletBetaApp.exceptions.UserAlreadyExistException;
 import EWalletBetaApp.utils.Verify;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.text.NumberFormat;
+import java.util.Locale;
 import java.util.Optional;
 
 @Service
+@AllArgsConstructor
 public class EWalletBetaServices implements WalletService{
     private final EWalletRepository walletRepository;
     private final TransactionService transactionService;
 
-    @Autowired
-    public EWalletBetaServices (EWalletRepository eWalletRepository, TransactionService transactionService){
-        this.walletRepository = eWalletRepository;
-        this.transactionService = transactionService;
-    }
 
     @Override
     public RegistrationResponse register(RegistrationRequest registrationRequest) throws UserAlreadyExistException {
@@ -67,6 +61,8 @@ public class EWalletBetaServices implements WalletService{
             savedWallet = walletRepository.save(wallet);
         }else throw new InvalidAccountNumber("The provided account is invalid");
 
+
+
         TransactionRequest transactionRequest = new TransactionRequest();
         transactionRequest.setTransactionType(TransactionType.CREDIT);
         transactionRequest.setTransactionStatus(TransactionStatus.SUCCESSFUL);
@@ -74,6 +70,49 @@ public class EWalletBetaServices implements WalletService{
         transactionRequest.setWalletId(savedWallet);
 
         TransactionResponse successfulTransaction = transactionService.createTransaction(transactionRequest);
+        return successfulTransaction;
+    }
+
+    private static String nairaFormatter(BigDecimal amount) {
+        Locale nigeria = new Locale("en", "NG");
+        NumberFormat nigeriaCurrency = NumberFormat.getCurrencyInstance(nigeria);
+        return nigeriaCurrency.format(amount);
+    }
+
+    @Override
+    public TransactionResponse withdrawal(TransferRequest transferRequest) throws InvalidAccountNumber {
+        verifyWithdrawalRequest(transferRequest);
+        BigDecimal transferAmount = transferRequest.getTransferAmount();
+        String receiverAccountNumber = transferRequest.getReceiverAccountNumber();
+        String senderAccountNumber = transferRequest.getDepositorAccount();
+
+        Wallet senderWallet = walletRepository.findByAccountNumber(receiverAccountNumber)
+                                               .orElseThrow(()->new InvalidAccountNumber("Incorrect Account"));
+
+        Wallet receiverWallet = walletRepository.findByAccountNumber(senderAccountNumber)
+                                                .orElseThrow(()-> new InvalidAccountNumber("Incorrect Account"));
+        if (transferAmount.compareTo(senderWallet.getBalance()) > 0) throw new IllegalArgumentException("Transfer amount cannot be greater than balance ");
+        TransactionResponse successfulTransaction = transfer(transferAmount, senderWallet, receiverWallet);
+
+        return successfulTransaction;
+    }
+
+    private TransactionResponse transfer(BigDecimal transferAmount, Wallet senderWallet, Wallet receiverWallet) {
+        BigDecimal senderNewAccountBalance = senderWallet.getBalance().subtract(transferAmount);
+        BigDecimal receiverNewAccountBalance = receiverWallet.getBalance().add(transferAmount);
+
+        senderWallet.setBalance(senderNewAccountBalance);
+        receiverWallet.setBalance(receiverNewAccountBalance);
+        walletRepository.save(senderWallet);
+        walletRepository.save(receiverWallet);
+
+        TransactionRequest transactionRequest = new TransactionRequest();
+        transactionRequest.setTransactionType(TransactionType.DEBIT);
+        transactionRequest.setTransactionStatus(TransactionStatus.SUCCESSFUL);
+        transactionRequest.setAmount(transferAmount);
+        transactionRequest.setWalletId(senderWallet);
+
+        TransactionResponse successfulTransaction =   transactionService.createTransaction(transactionRequest);
         return successfulTransaction;
     }
 
@@ -109,6 +148,12 @@ public class EWalletBetaServices implements WalletService{
         BigDecimal minimumDeposit = BigDecimal.valueOf(50.00);
         if (depositRequest.getDepositAmount().compareTo(minimumDeposit) < 0) throw new IllegalArgumentException("Deposit amount cannot be less than 50");
         if (depositRequest.getAccountNumber().length() != 10) throw new IllegalArgumentException("Account number must be 10 digit");
+    }
+
+    private static void verifyWithdrawalRequest(TransferRequest transferRequest) throws InvalidAccountNumber {
+        if (transferRequest.getTransferAmount().compareTo(BigDecimal.valueOf(50)) < 0) throw new IllegalArgumentException("Transfer amount cannot be less than 50");
+        if (transferRequest.getReceiverAccountNumber().length() < 10) throw new InvalidAccountNumber("The provided account is invalid");
+        if (transferRequest.getDepositorAccount().length() < 10) throw new InvalidAccountNumber("The provided account is invalid");
     }
 
 
