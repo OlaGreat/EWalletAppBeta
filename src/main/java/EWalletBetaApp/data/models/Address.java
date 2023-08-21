@@ -14,9 +14,9 @@ public class Address {
     private String street;
     private String lga;
     private String state;
-    @ManyToOne
-    @JoinColumn(name = "walletId", nullable = false)
-    private Wallet wallet;
+//    @ManyToOne
+//    @JoinColumn(name = "walletId", nullable = false)
+//    private Wallet wallet;
 
 
 }

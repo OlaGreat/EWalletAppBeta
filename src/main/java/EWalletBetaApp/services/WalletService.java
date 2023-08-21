@@ -7,6 +7,7 @@ import EWalletBetaApp.dto.request.TransferRequest;
 import EWalletBetaApp.dto.response.LoginResponse;
 import EWalletBetaApp.dto.response.RegistrationResponse;
 import EWalletBetaApp.dto.response.TransactionResponse;
+import EWalletBetaApp.exceptions.EWalletBetaException;
 import EWalletBetaApp.exceptions.InvalidAccountNumber;
 import EWalletBetaApp.exceptions.LoginFailedException;
 import EWalletBetaApp.exceptions.UserAlreadyExistException;
@@ -18,5 +19,5 @@ public interface WalletService {
 
     TransactionResponse deposit(DepositRequest depositRequest) throws InvalidAccountNumber;
 
-    TransactionResponse withdrawal(TransferRequest withdrawalRequest) throws InvalidAccountNumber;
+    TransactionResponse withdrawal(TransferRequest withdrawalRequest) throws EWalletBetaException;
 }

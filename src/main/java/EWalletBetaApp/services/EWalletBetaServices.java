@@ -7,23 +7,27 @@ import EWalletBetaApp.dto.request.*;
 import EWalletBetaApp.dto.response.LoginResponse;
 import EWalletBetaApp.dto.response.RegistrationResponse;
 import EWalletBetaApp.dto.response.TransactionResponse;
-import EWalletBetaApp.enums.TransactionStatus;
-import EWalletBetaApp.enums.TransactionType;
-import EWalletBetaApp.exceptions.InvalidAccountNumber;
-import EWalletBetaApp.exceptions.LoginFailedException;
-import EWalletBetaApp.exceptions.UserAlreadyExistException;
+import EWalletBetaApp.exceptions.*;
 import EWalletBetaApp.utils.Verify;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Optional;
+
+import static EWalletBetaApp.enums.TransactionStatus.SUCCESSFUL;
+import static EWalletBetaApp.enums.TransactionType.CREDIT;
+import static EWalletBetaApp.enums.TransactionType.DEBIT;
+import static EWalletBetaApp.exceptions.ExceptionMessages.*;
 
 @Service
 @AllArgsConstructor
+@Slf4j
 public class EWalletBetaServices implements WalletService{
     private final EWalletRepository walletRepository;
     private final TransactionService transactionService;
@@ -64,8 +68,8 @@ public class EWalletBetaServices implements WalletService{
 
 
         TransactionRequest transactionRequest = new TransactionRequest();
-        transactionRequest.setTransactionType(TransactionType.CREDIT);
-        transactionRequest.setTransactionStatus(TransactionStatus.SUCCESSFUL);
+        transactionRequest.setTransactionType(CREDIT);
+        transactionRequest.setTransactionStatus(SUCCESSFUL);
         transactionRequest.setAmount(depositAmount);
         transactionRequest.setWalletId(savedWallet);
 
@@ -80,35 +84,41 @@ public class EWalletBetaServices implements WalletService{
     }
 
     @Override
-    public TransactionResponse withdrawal(TransferRequest transferRequest) throws InvalidAccountNumber {
+    public TransactionResponse withdrawal(TransferRequest transferRequest) throws EWalletBetaException {
         verifyWithdrawalRequest(transferRequest);
         BigDecimal transferAmount = transferRequest.getTransferAmount();
         String receiverAccountNumber = transferRequest.getReceiverAccountNumber();
         String senderAccountNumber = transferRequest.getDepositorAccount();
+        String senderPin = transferRequest.getPin();
 
-        Wallet senderWallet = walletRepository.findByAccountNumber(receiverAccountNumber)
-                                               .orElseThrow(()->new InvalidAccountNumber("Incorrect Account"));
+        Wallet senderWallet = walletRepository.findByAccountNumber(senderAccountNumber)
+                                              .orElseThrow(()->new InvalidAccountNumber(INVALID_ACCOUNT_NUMBER.getMessage()));
 
-        Wallet receiverWallet = walletRepository.findByAccountNumber(senderAccountNumber)
-                                                .orElseThrow(()-> new InvalidAccountNumber("Incorrect Account"));
-        if (transferAmount.compareTo(senderWallet.getBalance()) > 0) throw new IllegalArgumentException("Transfer amount cannot be greater than balance ");
-        TransactionResponse successfulTransaction = transfer(transferAmount, senderWallet, receiverWallet);
+        Wallet receiverWallet = walletRepository.findByAccountNumber(receiverAccountNumber)
+                                                .orElseThrow(()-> new  InvalidAccountNumber(INVALID_ACCOUNT_NUMBER.getMessage()));
+
+        if (senderWallet.getBalance().compareTo(transferAmount) < 0) throw new InsufficientBalance(INSUFFICIENT_BALANCE.getMessage());
+        if(!Objects.equals(senderPin, senderWallet.getPin())) throw new IncorrectPin(INCORRECT_PIN.getMessage());
+
+        BigDecimal senderNewBalance = senderWallet.getBalance().subtract(transferAmount);
+        senderWallet.setBalance(senderNewBalance);
+        Wallet savedWallet = walletRepository.save(senderWallet);
+
+        BigDecimal receiverNewBalance = receiverWallet.getBalance().add(transferAmount);
+        receiverWallet.setBalance(receiverNewBalance);
+        walletRepository.save(receiverWallet);
+
+
+        TransactionResponse successfulTransaction = transactionReceipt(transferAmount, senderWallet, receiverWallet);
 
         return successfulTransaction;
     }
 
-    private TransactionResponse transfer(BigDecimal transferAmount, Wallet senderWallet, Wallet receiverWallet) {
-        BigDecimal senderNewAccountBalance = senderWallet.getBalance().subtract(transferAmount);
-        BigDecimal receiverNewAccountBalance = receiverWallet.getBalance().add(transferAmount);
-
-        senderWallet.setBalance(senderNewAccountBalance);
-        receiverWallet.setBalance(receiverNewAccountBalance);
-        walletRepository.save(senderWallet);
-        walletRepository.save(receiverWallet);
+    private TransactionResponse transactionReceipt(BigDecimal transferAmount, Wallet senderWallet, Wallet receiverWallet) {
 
         TransactionRequest transactionRequest = new TransactionRequest();
-        transactionRequest.setTransactionType(TransactionType.DEBIT);
-        transactionRequest.setTransactionStatus(TransactionStatus.SUCCESSFUL);
+        transactionRequest.setTransactionType(DEBIT);
+        transactionRequest.setTransactionStatus(SUCCESSFUL);
         transactionRequest.setAmount(transferAmount);
         transactionRequest.setWalletId(senderWallet);
 
@@ -152,8 +162,8 @@ public class EWalletBetaServices implements WalletService{
 
     private static void verifyWithdrawalRequest(TransferRequest transferRequest) throws InvalidAccountNumber {
         if (transferRequest.getTransferAmount().compareTo(BigDecimal.valueOf(50)) < 0) throw new IllegalArgumentException("Transfer amount cannot be less than 50");
-        if (transferRequest.getReceiverAccountNumber().length() < 10) throw new InvalidAccountNumber("The provided account is invalid");
-        if (transferRequest.getDepositorAccount().length() < 10) throw new InvalidAccountNumber("The provided account is invalid");
+        if (transferRequest.getReceiverAccountNumber().length() != 10) throw new InvalidAccountNumber("The provided account is invalid");
+        if (transferRequest.getDepositorAccount().length() != 10) throw new InvalidAccountNumber("The provided account is invalid");
     }
 
 

@@ -28,7 +28,7 @@ public class EWalletBetaTransactionService implements TransactionService{
         transaction.setTransactionStatus(transactionRequest.getTransactionStatus());
         transaction.setTransactionType(transactionRequest.getTransactionType());
         transaction.setAmount(transactionRequest.getAmount());
-        transaction.setWalletId(transactionRequest.getWalletId());
+//        transaction.setWalletId(transactionRequest.getWalletId());
         transaction.setTransactionReferenceNumber(Generate.generateReferenceNumber());
 
         Transaction savedTransaction  = transactionRepository.save(transaction);

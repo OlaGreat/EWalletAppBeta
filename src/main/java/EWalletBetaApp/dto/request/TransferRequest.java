@@ -11,4 +11,5 @@ public class TransferRequest {
     private String receiverAccountNumber;
     private String depositorAccount;
     private BigDecimal transferAmount;
+    private String pin;
 }

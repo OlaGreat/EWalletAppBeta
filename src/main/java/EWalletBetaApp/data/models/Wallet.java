@@ -1,7 +1,9 @@
 package EWalletBetaApp.data.models;
 
+import EWalletBetaApp.dto.response.TransactionResponse;
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.OnDelete;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -23,7 +25,7 @@ public class Wallet {
     @Column(unique = true, nullable = false)
     private String userName;
 
-    @ManyToOne
+    @OneToOne
     private Address address;
 
     private BigDecimal balance;
@@ -38,6 +40,9 @@ public class Wallet {
     private String passWord;
     @OneToMany(mappedBy = "walletId", cascade = CascadeType.ALL, orphanRemoval = true)
     private  List<Transaction> transactions = new ArrayList<>();
+
+//    @ElementCollection
+//    private List<TransactionResponse> transactionResponse;
 
 
 }
