@@ -127,6 +127,8 @@ public class EWalletBetaServices implements WalletService{
     }
 
 
+
+
     @Override
     public LoginResponse login(LoginRequest loginRequest) throws LoginFailedException {
         String password = loginRequest.getPassWord();

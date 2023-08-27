@@ -10,11 +10,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class EWalletBetaTransactionService implements TransactionService{
    private final EWalletTransactionRepository transactionRepository;
+
 
     @Autowired
     public EWalletBetaTransactionService(EWalletTransactionRepository transactionRepository){
@@ -60,7 +62,7 @@ public class EWalletBetaTransactionService implements TransactionService{
     @Override
     public List<Transaction> findByDate(String date) {
         LocalDate transactionDate = LocalDate.parse(date);
-        List<Transaction> transactions = null;
+        List<Transaction> transactions = new ArrayList<>();
         if (transactionRepository.findTransactionByTransactionDate(transactionDate).size() > 0){
             transactions = transactionRepository.findTransactionByTransactionDate(transactionDate);
             return transactions;

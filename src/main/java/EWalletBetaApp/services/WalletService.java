@@ -20,4 +20,5 @@ public interface WalletService {
     TransactionResponse deposit(DepositRequest depositRequest) throws InvalidAccountNumber;
 
     TransactionResponse withdrawal(TransferRequest withdrawalRequest) throws EWalletBetaException;
+
 }
