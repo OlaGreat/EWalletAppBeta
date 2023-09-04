@@ -123,6 +123,14 @@ class EWalletBetaServicesTest {
 
     }
 
+    @Test
+    public void testCheckBalance(){
+        String balance = walletService.checkBalance("1111",101L);
+        log.info("Here is your balance ----> " + balance);
+
+
+    }
+
 
 
     private static LoginRequest buildLoginRequest() {

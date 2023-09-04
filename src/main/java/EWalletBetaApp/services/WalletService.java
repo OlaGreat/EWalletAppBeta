@@ -21,4 +21,5 @@ public interface WalletService {
 
     TransactionResponse withdrawal(TransferRequest withdrawalRequest) throws EWalletBetaException;
 
+    String checkBalance(String pin, Long id);
 }

@@ -114,6 +114,22 @@ public class EWalletBetaServices implements WalletService{
         return successfulTransaction;
     }
 
+    @Override
+    public String checkBalance(String pin, Long id) {
+        Optional<Wallet> foundWallet = walletRepository.findById(id);
+        Wallet wallet = foundWallet.get();
+        if(wallet.getPin().equals(pin)){
+            Locale locale = new Locale("en", "NG");
+            NumberFormat nigeriaCurrency = NumberFormat.getCurrencyInstance(locale);
+            return nigeriaCurrency.format(wallet.getBalance());
+        }
+
+
+
+
+        return null;
+    }
+
     private TransactionResponse transactionReceipt(BigDecimal transferAmount, Wallet senderWallet, Wallet receiverWallet) {
 
         TransactionRequest transactionRequest = new TransactionRequest();
